@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Streamify</title>
+  <link rel="stylesheet" href="index.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="icon" type="image/png" href="public/spotify.png" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1><i class="fab fa-spotify"></i> Streamify</h1>
+    </header>
+    <div class="filters">
+      <div class="search-container">
+        <input id="artist-search" type="text" placeholder="Search by artist">
+        <i class="fas fa-search"></i>
+      </div>
+      <div class="search-container">
+        <input id="song-search" type="text" placeholder="Search by song name">
+        <i class="fas fa-music"></i>
+      </div>
+      
+      <select id="genre-filter">
+        <option value="">All Genres</option>
+        <option value="pop">Pop</option>
+        <option value="rap">Rap</option>
+        <option value="rock">Rock</option>
+        <option value="latin">latin</option>
+        <option value="edm">edm</option>
+        <option value="r&b">r&b</option>
+      </select>
+      <select id="popularity-filter">
+        <option value="">All Popularity Levels</option>
+        <option value="low">Low</option>
+        <option value="average">Average</option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+      </select>
+      <button id="export">Download Filtered Data <i class="fas fa-download"></i></button>
+    </div>
+    <div id="pagination"></div>
+    <div id="song-list"></div>
+  </div>
+  <script type="module" src="index.js" defer></script>
+</body>
+</html>
