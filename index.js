@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
   
     async function loadSongs() {
       try {
-        const response = await fetch("https://spotify-research.netlify.app/spotify_songs.json");
+        const response = await fetch("spotify_songs.json");
         songs = await response.json();
         // Log the first song to see its structure
         console.log("First song structure:", songs[0]);
