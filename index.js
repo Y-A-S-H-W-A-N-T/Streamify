@@ -1,29 +1,32 @@
 // index.js
+import { artistFilter } from './filters/artistFilter.js';
+import { songFilter } from './filters/songFilter.js';
+import { genreFilter } from './filters/genreFilter.js';
+import { popularityFilter } from './filters/popularityFilter.js';
+import { formatDuration } from './utils/formatDuration.js';
+import { debounce } from './utils/debounce.js';
+import JSZip from "jszip";
+import { saveAs } from 'file-saver';
+
+
 document.addEventListener("DOMContentLoaded", () => {
     const songList = document.getElementById("song-list");
     const artistSearchInput = document.getElementById("artist-search");
     const songSearchInput = document.getElementById("song-search");
-    const genreFilter = document.getElementById("genre-filter");
-    const popularityFilter = document.getElementById("popularity-filter");
+    const genreFilterSelect = document.getElementById("genre-filter");
+    const popularityFilterSelect = document.getElementById("popularity-filter");
     const exportButton = document.getElementById("export");
     const paginationContainer = document.getElementById("pagination");
-  
+
     let songs = [];
     let currentPage = 1;
     const itemsPerPage = 20;
-  
-    function formatDuration(durationMs) {
-      const minutes = Math.floor(durationMs / 60000);
-      const seconds = Math.floor((durationMs % 60000) / 1000);
-      return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-    }
-  
+
+    // for loading and displaying songs from the imported json file
     async function loadSongs() {
       try {
-        const response = await fetch("spotify_songs.json");
+        const response = await fetch("/spotify_songs.json");
         songs = await response.json();
-        // Log the first song to see its structure
-        console.log("First song structure:", songs[0]);
         const filtered = filterSongs();
         renderSongs(filtered);
         renderPagination(filtered);
@@ -32,17 +35,19 @@ document.addEventListener("DOMContentLoaded", () => {
         songList.innerHTML = '<p style="color: red;">Error loading songs. Please try again later.</p>';
       }
     }
-  
+
+    // songs sections
+
     function renderSongs(filteredSongs) {
       const startIndex = (currentPage - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
       const paginatedSongs = filteredSongs.slice(startIndex, endIndex);
-  
+
       if (paginatedSongs.length === 0) {
         songList.innerHTML = '<p>No songs found matching your criteria.</p>';
         return;
       }
-  
+
       songList.innerHTML = paginatedSongs
         .map((song) => {
           const popularityCategory =
@@ -53,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
               : song.track_popularity <= 75
               ? { label: "Medium", color: "yellowgreen" }
               : { label: "High", color: "green" };
-  
+
           return `
             <div class="song-card">
                 <h3>${song.track_name || 'Untitled'}</h3>
@@ -79,14 +84,15 @@ document.addEventListener("DOMContentLoaded", () => {
         })
         .join("");
     }
-  
+
+    // pagination for the site
     function renderPagination(filteredSongs) {
       const totalPages = Math.ceil(filteredSongs.length / itemsPerPage);
       if (totalPages <= 1) {
         paginationContainer.innerHTML = '';
         return;
       }
-  
+
       paginationContainer.innerHTML = `
         <button class="page-btn" ${currentPage === 1 ? 'disabled' : ''}>
           <i class="fas fa-chevron-left"></i>
@@ -96,9 +102,9 @@ document.addEventListener("DOMContentLoaded", () => {
           <i class="fas fa-chevron-right"></i>
         </button>
       `;
-  
+
       const [prevButton, , nextButton] = paginationContainer.children;
-  
+
       prevButton.addEventListener("click", () => {
         if (currentPage > 1) {
           currentPage--;
@@ -107,7 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
           renderPagination(filtered);
         }
       });
-  
+
       nextButton.addEventListener("click", () => {
         if (currentPage < totalPages) {
           currentPage++;
@@ -117,61 +123,35 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
     }
-  
+
+    // filter functionality, returns filtered data after applying the filters
     function filterSongs() {
-      const artistTerm = artistSearchInput.value.toLowerCase().trim();
-      const songTerm = songSearchInput.value.toLowerCase().trim();
-      const genre = genreFilter.value;
-      const popularity = popularityFilter.value;
-  
-      return songs.filter((song) => {
-        // Safely access and convert string properties
-        const songName = String(song.track_name || '').toLowerCase();
-        const artistName = String(song.track_artist || '').toLowerCase();
-        const genreName = String(song.playlist_genre || '');
-        
-        const popularityCategory =
-          (song.track_popularity || 0) <= 25
-            ? "low"
-            : (song.track_popularity || 0) <= 50
-            ? "average"
-            : (song.track_popularity || 0) <= 75
-            ? "medium"
-            : "high";
-  
-        const artistMatch = !artistTerm || artistName.includes(artistTerm);
-        const songMatch = !songTerm || songName.includes(songTerm);
-        const genreMatch = !genre || genreName === genre;
-        const popularityMatch = !popularity || popularityCategory === popularity;
-  
-        return artistMatch && songMatch && genreMatch && popularityMatch;
-      });
+      const artistTerm = artistSearchInput.value;
+      const songTerm = songSearchInput.value;
+      const genre = genreFilterSelect.value;
+      const popularity = popularityFilterSelect.value;
+
+      let filtered = songs;
+      filtered = artistFilter(filtered, artistTerm);
+      filtered = songFilter(filtered, songTerm);
+      filtered = genreFilter(filtered, genre);
+      filtered = popularityFilter(filtered, popularity);
+
+      return filtered;
     }
-  
-    function debounce(func, wait) {
-      let timeout;
-      return function executedFunction(...args) {
-        const later = () => {
-          clearTimeout(timeout);
-          func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-      };
-    }
-  
+
     const handleSearch = debounce(() => {
       currentPage = 1;
       const filtered = filterSongs();
       renderSongs(filtered);
       renderPagination(filtered);
     }, 300);
-  
+
     artistSearchInput.addEventListener("input", handleSearch);
     songSearchInput.addEventListener("input", handleSearch);
-    genreFilter.addEventListener("change", handleSearch);
-    popularityFilter.addEventListener("change", handleSearch);
-  
+    genreFilterSelect.addEventListener("change", handleSearch);
+    popularityFilterSelect.addEventListener("change", handleSearch);
+
     exportButton.addEventListener("click", () => {
       const filteredSongs = filterSongs();
       const zip = new JSZip();
@@ -181,7 +161,5 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    
-  
     loadSongs();
-  });
+});
